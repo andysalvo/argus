@@ -100,7 +100,7 @@ describe('formatComment', () => {
     };
 
     const comment = formatComment(result);
-    assert.ok(comment.includes('https://github.com/apps/argus/installations/new'));
+    assert.ok(comment.includes('https://github.com/apps/argusreview/installations/new'));
   });
 
   it('shows threshold warning when score is below threshold', () => {

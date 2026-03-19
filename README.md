@@ -4,7 +4,7 @@ The only AI instruction reviewer that works across all major AI coding framework
 
 Argus is a GitHub App that automatically reviews AI instruction files in your repository and posts a quality score as a PR comment.
 
-[![Install Argus](https://img.shields.io/badge/Install-Argus-blue?style=flat-square)](https://github.com/apps/argus/installations/new)
+[![Install Argus](https://img.shields.io/badge/Install-Argus-blue?style=flat-square)](https://github.com/apps/argusreview/installations/new)
 
 ## Badge
 
@@ -44,7 +44,7 @@ When you push a commit or open a PR that touches any AI instruction file, Argus 
 
 ## Install
 
-1. Go to [github.com/apps/argus/installations/new](https://github.com/apps/argus/installations/new)
+1. Go to [github.com/apps/argus/installations/new](https://github.com/apps/argusreview/installations/new)
 2. Select your repositories
 3. Done. Argus will review AI instruction files on every PR.
 

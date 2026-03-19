@@ -30,7 +30,7 @@ export function formatComment(result, threshold) {
   lines.push('---');
   lines.push('*[Argus](https://github.com/andysalvo/argus) reviews AI instruction files');
   lines.push('against the [Governance Standard v1.0](https://github.com/andysalvo/argus#scoring).');
-  lines.push('[Install](https://github.com/apps/argus/installations/new)*');
+  lines.push('[Install](https://github.com/apps/argusreview/installations/new)*');
 
   return lines.join('\n');
 }

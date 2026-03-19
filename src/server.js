@@ -277,7 +277,7 @@ const LANDING_HTML = `<!DOCTYPE html>
   <p class="tagline">AI instruction file reviewer for GitHub.</p>
   <p>Automatically reviews <code>CLAUDE.md</code>, <code>AGENTS.md</code>, <code>.cursorrules</code>, and 9 more file patterns. Scores against the <strong>Argus Governance Standard v1.0</strong> -- 10 checks, transparent weights, zero false positives.</p>
 
-  <a href="https://github.com/apps/argus/installations/new" class="btn">Install on GitHub</a>
+  <a href="https://github.com/apps/argusreview/installations/new" class="btn">Install on GitHub</a>
 
   <h2>Supported frameworks</h2>
   <ul>
