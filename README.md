@@ -5,17 +5,17 @@ The only AI instruction reviewer that works across all major AI coding framework
 Argus is a GitHub App that automatically reviews AI instruction files in your repository and posts a quality score as a PR comment.
 
 [![Install Argus](https://img.shields.io/badge/Install-Argus-blue?style=flat-square)](https://github.com/apps/argusreview/installations/new)
-![Argus Grade](https://argus.asalvocreative.com/badge/andysalvo/argus)
+[![Argus Grade](https://argus.asalvocreative.com/badge/andysalvo/argus)](https://github.com/andysalvo/argus)
 
 ## Badge
 
 Show your repo's Argus grade in your README:
 
 ```markdown
-![Argus Grade](https://argus.asalvocreative.com/badge/OWNER/REPO)
+[![Argus Grade](https://argus.asalvocreative.com/badge/OWNER/REPO)](https://github.com/andysalvo/argus)
 ```
 
-Replace `OWNER/REPO` with your GitHub username and repository name. The badge updates automatically when Argus reviews your files.
+Replace `OWNER/REPO` with your GitHub username and repository name. Clicking the badge takes people to the Argus repo. The badge updates automatically when Argus reviews your files.
 
 ## What It Does
 
