@@ -236,6 +236,109 @@ app.get('/', (req, res) => {
   res.type('text/html').send(LANDING_HTML);
 });
 
+// --- Badge endpoint ---
+
+const BADGE_COLORS = {
+  A: 'brightgreen',
+  B: 'green',
+  C: 'yellow',
+  D: 'orange',
+  F: 'red',
+};
+
+app.get('/badge/:owner/:repo', async (req, res) => {
+  const { owner, repo } = req.params;
+  const notReviewed = 'https://img.shields.io/badge/Argus-not%20reviewed-lightgrey';
+
+  try {
+    const installOctokit = await getInstallationOctokit(owner, repo);
+    if (!installOctokit) {
+      return res.redirect(302, notReviewed);
+    }
+
+    // Search open PR comments first
+    const score = await findScoreInPRs(installOctokit, owner, repo)
+      || await findScoreInCommits(installOctokit, owner, repo);
+
+    if (!score) {
+      return res.redirect(302, notReviewed);
+    }
+
+    const color = BADGE_COLORS[score.grade] || 'lightgrey';
+    const label = encodeURIComponent(`${score.grade} (${score.score}/100)`);
+    res.redirect(302, `https://img.shields.io/badge/Argus-${label}-${color}`);
+  } catch (err) {
+    console.error(`[Badge] Error for ${owner}/${repo}:`, err.message);
+    res.redirect(302, notReviewed);
+  }
+});
+
+async function getInstallationOctokit(owner, repo) {
+  try {
+    const { data: installation } = await ghApp.octokit.request(
+      'GET /repos/{owner}/{repo}/installation',
+      { owner, repo },
+    );
+    return await ghApp.getInstallationOctokit(installation.id);
+  } catch {
+    return null;
+  }
+}
+
+function parseScore(body) {
+  if (!body || !body.includes('<!-- argus-review -->')) return null;
+  const match = body.match(/(\d+)\/100/);
+  if (!match) return null;
+  const score = parseInt(match[1], 10);
+  let grade;
+  if (score >= 85) grade = 'A';
+  else if (score >= 70) grade = 'B';
+  else if (score >= 55) grade = 'C';
+  else if (score >= 40) grade = 'D';
+  else grade = 'F';
+  return { score, grade };
+}
+
+async function findScoreInPRs(octokit, owner, repo) {
+  try {
+    const { data: prs } = await octokit.rest.pulls.list({
+      owner, repo, state: 'all', sort: 'updated', direction: 'desc', per_page: 5,
+    });
+
+    for (const pr of prs) {
+      const { data: comments } = await octokit.rest.issues.listComments({
+        owner, repo, issue_number: pr.number, per_page: 50,
+      });
+
+      for (const comment of comments) {
+        const result = parseScore(comment.body);
+        if (result) return result;
+      }
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+async function findScoreInCommits(octokit, owner, repo) {
+  try {
+    const { data: commits } = await octokit.rest.repos.listCommits({
+      owner, repo, per_page: 10,
+    });
+
+    for (const commit of commits) {
+      const { data: comments } = await octokit.rest.repos.listCommentsForCommit({
+        owner, repo, commit_sha: commit.sha, per_page: 10,
+      });
+
+      for (const comment of comments) {
+        const result = parseScore(comment.body);
+        if (result) return result;
+      }
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
 app.listen(PORT, '0.0.0.0', async () => {
   const { data } = await ghApp.octokit.request('/app');
   console.log(`Argus v1.0.0 listening on port ${PORT}`);
