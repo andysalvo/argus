@@ -1,6 +1,6 @@
 # Argus -- Claude Code Instructions
 
-You are working on Argus, a GitHub App that reviews AI instruction files.
+You are working on Argus, a GitHub App that reviews AI instruction files against the Argus Governance Standard v1.0.
 
 ## Your Role
 
