@@ -229,7 +229,7 @@ app.use(createNodeMiddleware(ghApp.webhooks, { path: '/api/webhook' }));
 app.use(express.json());
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', app: 'argus', version: '1.0.0' });
+  res.json({ status: 'ok', app: 'argus', version: '1.1.0' });
 });
 
 app.get('/', (req, res) => {
@@ -341,7 +341,7 @@ async function findScoreInCommits(octokit, owner, repo) {
 
 app.listen(PORT, '0.0.0.0', async () => {
   const { data } = await ghApp.octokit.request('/app');
-  console.log(`Argus v1.0.0 listening on port ${PORT}`);
+  console.log(`Argus v1.1.0 listening on port ${PORT}`);
   console.log(`Authenticated as "${data.name}"`);
   console.log(`Webhook: http://localhost:${PORT}/api/webhook`);
 });
@@ -378,7 +378,7 @@ const LANDING_HTML = `<!DOCTYPE html>
 <div class="wrap">
   <h1>Argus</h1>
   <p class="tagline">AI instruction file reviewer for GitHub.</p>
-  <p>Automatically reviews <code>CLAUDE.md</code>, <code>AGENTS.md</code>, <code>.cursorrules</code>, and 9 more file patterns. Scores against the <strong>Argus Governance Standard v1.0</strong> -- 10 checks, transparent weights, zero false positives.</p>
+  <p>Automatically reviews <code>CLAUDE.md</code>, <code>AGENTS.md</code>, <code>.cursorrules</code>, and 9 more file patterns. Scores against the <strong>Argus Governance Standard v1.1</strong> -- 13 checks, document-type-aware scoring, zero false positives.</p>
 
   <a href="https://github.com/apps/argusreview/installations/new" class="btn">Install on GitHub</a>
 
@@ -411,7 +411,7 @@ const LANDING_HTML = `<!DOCTYPE html>
   <p><a href="https://github.com/andysalvo/argus#scoring">Scoring methodology</a></p>
 
   <div class="footer">
-    <p>Argus v1.0.0 -- MIT License -- Built by <a href="https://github.com/andysalvo">Andy Salvo</a></p>
+    <p>Argus v1.1.0 -- MIT License -- Built by <a href="https://github.com/andysalvo">Andy Salvo</a></p>
   </div>
 </div>
 </body>

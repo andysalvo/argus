@@ -29,7 +29,7 @@ export function formatComment(result, threshold) {
   lines.push('');
   lines.push('---');
   lines.push('*[Argus](https://github.com/andysalvo/argus) reviews AI instruction files');
-  lines.push('against the [Governance Standard v1.0](https://github.com/andysalvo/argus#scoring).');
+  lines.push('against the [Governance Standard v1.1](https://github.com/andysalvo/argus#scoring).');
   lines.push('[Install](https://github.com/apps/argusreview/installations/new)*');
 
   return lines.join('\n');
@@ -41,14 +41,15 @@ function formatSingleFile(file, threshold) {
     ? `\n> :warning: Below configured threshold of ${threshold}.`
     : '';
 
-  lines.push(`## Argus Review -- ${file.grade} (${file.score}/100)`);
+  const docLabel = file.docType === 'system-prompt' ? 'System Prompt' : 'Project Doc';
+  lines.push(`## Argus Review -- ${file.grade} (${file.score}/100) · ${docLabel}`);
   if (thresholdWarning) lines.push(thresholdWarning);
   lines.push('');
 
   if (file.issues.length === 0) {
     lines.push(`**No issues found in \`${file.path}\`** ${ICONS.pass}`);
     lines.push('');
-    lines.push('All 10 checks passed.');
+    lines.push('All 13 checks passed.');
   } else {
     lines.push(`**${file.issues.length} issue${file.issues.length === 1 ? '' : 's'} found in \`${file.path}\`**`);
     lines.push('');
@@ -121,7 +122,7 @@ function formatIssues(issues) {
 function formatDetailsTable(file) {
   const lines = [];
   lines.push('<details>');
-  lines.push('<summary>All 10 checks</summary>');
+  lines.push('<summary>All 13 checks</summary>');
   lines.push('');
   lines.push('| Check | Score | Status |');
   lines.push('|-------|-------|--------|');

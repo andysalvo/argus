@@ -11,7 +11,7 @@ describe('formatComment', () => {
         score: 85,
         grade: 'A',
         label: 'Excellent',
-        criticalFailure: false,
+        docType: 'system-prompt', criticalFailure: false,
         issues: [],
         results: [
           { name: 'Silent Inference', maxPoints: 15, points: 15, status: 'pass', fix: '' },
@@ -40,7 +40,7 @@ describe('formatComment', () => {
         score: 75,
         grade: 'B',
         label: 'Good',
-        criticalFailure: false,
+        docType: 'system-prompt', criticalFailure: false,
         issues: [
           { name: 'Authority Boundaries', maxPoints: 15, points: 0, status: 'fail', fix: 'Add approval.' },
         ],
@@ -60,7 +60,7 @@ describe('formatComment', () => {
     };
 
     const comment = formatComment(result);
-    assert.ok(comment.includes('## Argus Review -- B (75/100)'));
+    assert.ok(comment.includes('## Argus Review -- B (75/100) · System Prompt'));
   });
 
   it('shows issues for failing checks', () => {
@@ -71,7 +71,7 @@ describe('formatComment', () => {
         score: 60,
         grade: 'C',
         label: 'Fair',
-        criticalFailure: false,
+        docType: 'system-prompt', criticalFailure: false,
         issues: [
           { name: 'Authority Boundaries', maxPoints: 15, points: 0, status: 'fail', fix: 'Add approval.' },
           { name: 'Vague Objectives', maxPoints: 10, points: 5, status: 'partial', fix: 'Add specifics.' },
@@ -93,14 +93,14 @@ describe('formatComment', () => {
         score: 90,
         grade: 'A',
         label: 'Excellent',
-        criticalFailure: false,
+        docType: 'system-prompt', criticalFailure: false,
         issues: [],
         results: [],
       }],
     };
 
     const comment = formatComment(result);
-    assert.ok(comment.includes('https://github.com/apps/argusreview/installations/new'));
+    assert.ok(comment.includes('argusreview/installations/new'));
   });
 
   it('shows threshold warning when score is below threshold', () => {
@@ -111,7 +111,7 @@ describe('formatComment', () => {
         score: 60,
         grade: 'C',
         label: 'Fair',
-        criticalFailure: false,
+        docType: 'system-prompt', criticalFailure: false,
         issues: [],
         results: [],
       }],
@@ -125,8 +125,8 @@ describe('formatComment', () => {
     const result = {
       summary: { score: 75, grade: 'B', label: 'Good' },
       files: [
-        { path: 'CLAUDE.md', score: 80, grade: 'B', label: 'Good', criticalFailure: false, issues: [], results: [] },
-        { path: 'AGENTS.md', score: 70, grade: 'B', label: 'Good', criticalFailure: false, issues: [], results: [] },
+        { path: 'CLAUDE.md', score: 80, grade: 'B', label: 'Good', docType: 'system-prompt', criticalFailure: false, issues: [], results: [] },
+        { path: 'AGENTS.md', score: 70, grade: 'B', label: 'Good', docType: 'system-prompt', criticalFailure: false, issues: [], results: [] },
       ],
     };
 

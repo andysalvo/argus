@@ -1,7 +1,8 @@
 /**
- * Argus Governance Standard v1.0
+ * Argus Governance Standard v1.1
  *
- * 10 checks, 110 raw points, normalized to 0-100.
+ * 13 checks, 140 raw points, normalized to 0-100.
+ * Document type detection: System Prompt vs Project Doc.
  * Transparent, versioned scoring. Published weights in README.
  */
 
@@ -33,6 +34,25 @@ function stripMarkdown(text) {
     // Remove list markers
     .replace(/^[\s]*[-*+]\s/gm, '')
     .replace(/^[\s]*\d+\.\s/gm, '');
+}
+
+// --- Document type detection ---
+
+const BEHAVIORAL_PATTERNS = [
+  /\byou are\b/i,
+  /\byour role\b/i,
+  /\byou act as\b/i,
+  /\byour purpose\b/i,
+  /\byour task\b/i,
+  /\bact as\b/i,
+  /\byou will\b/i,
+];
+
+function detectDocType(text) {
+  for (const pattern of BEHAVIORAL_PATTERNS) {
+    if (pattern.test(text)) return 'system-prompt';
+  }
+  return 'project-doc';
 }
 
 // --- Check definitions ---
@@ -102,15 +122,40 @@ const CHECKS = [
     fix: 'Add: "When unsure about the correct approach, stop and ask the user before proceeding."',
   },
   {
-    name: 'Data Handling',
+    name: 'Safety & Data Handling',
     maxPoints: 8,
     type: 'positive',
     run: checkDataHandling,
     fix: 'Add: "Do not log or expose sensitive information such as API keys, passwords, or PII."',
   },
+  // --- v1.1 new checks ---
+  {
+    name: 'Project Context',
+    maxPoints: 10,
+    type: 'positive',
+    conditional: 'project-doc',
+    run: checkProjectContext,
+    fix: 'Add a project overview describing the repository structure, purpose, and key directories.',
+  },
+  {
+    name: 'Development Workflow',
+    maxPoints: 10,
+    type: 'positive',
+    conditional: 'project-doc',
+    run: checkDevelopmentWorkflow,
+    fix: 'Add setup, build, and test commands so agents know how to work in the codebase.',
+  },
+  {
+    name: 'Code Conventions',
+    maxPoints: 10,
+    type: 'positive',
+    conditional: 'project-doc',
+    run: checkCodeConventions,
+    fix: 'Add coding standards: naming conventions, file organization, style guidelines.',
+  },
 ];
 
-const TOTAL_RAW = CHECKS.reduce((sum, c) => sum + c.maxPoints, 0); // 110
+const TOTAL_RAW = CHECKS.reduce((sum, c) => sum + c.maxPoints, 0); // 140
 
 // --- Individual check implementations ---
 
@@ -125,18 +170,13 @@ function checkSilentInference(text) {
     /infer\s.{0,20}meaning/i,
   ];
 
-  // "assume" only flagged when followed by intent/meaning/context within 5 words
   const assumeBadPattern = /\bassume\s+(?:\w+\s+){0,4}(?:intent|meaning|context)\b/i;
-  // "do not assume" is a pass, not a fail -- exclude negated forms
   const assumeNegated = /(?:do not|don't|never|must not|should not)\s+assume/i;
 
   let badCount = 0;
-
   for (const pattern of badPatterns) {
     if (pattern.test(text)) badCount++;
   }
-
-  // Check assume pattern only if not negated
   if (assumeBadPattern.test(text) && !assumeNegated.test(text)) {
     badCount++;
   }
@@ -146,18 +186,24 @@ function checkSilentInference(text) {
 
 function checkAuthorityBoundaries(text) {
   const patterns = [
+    // v1.0 patterns
     /(?:user|human)\s.{0,20}(?:approv|confirm|authoriz|decide)/i,
     /(?:ask|check|verify)\s.{0,20}(?:before|permission|consent)/i,
     /\bescalat/i,
     /human[- ]?in[- ]?the[- ]?loop/i,
     /require\s.{0,15}confirmation/i,
     /(?:do not|don't|never)\s.{0,20}without\s.{0,20}permission/i,
+    // v1.1 broadened: project-level review/verification
+    /\breview\b/i,
+    /\bbefore\s.{0,20}(?:commit|submit|merge)/i,
+    /\bchecklist\b/i,
   ];
   return { matchCount: countMatches(text, patterns) };
 }
 
 function checkScopeLimitations(text) {
   const patterns = [
+    // v1.0 patterns
     /(?:do not|don't)\s.{0,20}(?:modify|access|change|touch|delete|create|push|deploy)/i,
     /\bnever\s.{0,20}(?:modify|access|change|delete)/i,
     /\bmust not\b/i,
@@ -167,12 +213,18 @@ function checkScopeLimitations(text) {
     /\bprohibited\b/i,
     /\bboundary\b/i,
     /\bconstraint/i,
+    // v1.1 broadened: project-level constraints
+    /will not\s.{0,20}accept/i,
+    /\bare not accepted\b/i,
+    /\bdo not include\b/i,
+    /\bshould not\b/i,
   ];
   return { matchCount: countMatches(text, patterns) };
 }
 
 function checkAuditTrail(text) {
   const patterns = [
+    // v1.0 patterns
     /\blog\b/i,
     /\baudit\b/i,
     /\brecord\b/i,
@@ -181,12 +233,18 @@ function checkAuditTrail(text) {
     /decision\s.{0,10}log/i,
     /\bhistory\b/i,
     /\bchangelog\b/i,
+    // v1.1 broadened: version control as audit trail
+    /\bcommit\b/i,
+    /\bpull request\b/i,
+    /\bPR\b/,
+    /\bversion\b/i,
   ];
   return { matchCount: countMatches(text, patterns) };
 }
 
 function checkErrorHandling(text) {
   const patterns = [
+    // v1.0 patterns
     /\berror\b/i,
     /\bfail/i,
     /\bfallback\b/i,
@@ -194,12 +252,17 @@ function checkErrorHandling(text) {
     /\btimeout\b/i,
     /\bgraceful/i,
     /\bexception\b/i,
+    // v1.1 broadened: validation/verification
+    /\bvalidat/i,
+    /\bverif/i,
+    /\bensure\b/i,
   ];
   return { matchCount: countMatches(text, patterns) };
 }
 
 function checkOutputFormat(text) {
   const patterns = [
+    // v1.0 patterns
     /\bformat\b/i,
     /\bstructured\b/i,
     /\bjson\b/i,
@@ -207,18 +270,26 @@ function checkOutputFormat(text) {
     /\btemplate\b/i,
     /\bschema\b/i,
     /(?:respond|reply|output|return)\s.{0,15}(?:format|structure)/i,
+    // v1.1 broadened: config/schema specs
+    /\bfront.?matter\b/i,
+    /\byaml\b/i,
+    /\bconfigur/i,
   ];
   return { matchCount: countMatches(text, patterns) };
 }
 
 function checkIdentityDefinition(text) {
   const patterns = [
+    // v1.0 patterns
     /\byou are\b/i,
     /\byour role\b/i,
     /\byou act as\b/i,
     /\byour purpose\b/i,
     /\bagent\b/i,
     /\bpersona\b/i,
+    // v1.1 broadened: project identity
+    /\bproject\b/i,
+    /\brepository\b/i,
   ];
   return { matchCount: countMatches(text, patterns) };
 }
@@ -241,12 +312,10 @@ function checkVagueObjectives(text) {
     /\bdone when\b/i,
   ];
 
-  // Check if any vague phrases exist
   let vagueCount = 0;
   for (const pattern of vaguePatterns) {
     const match = text.match(pattern);
     if (match) {
-      // Check if the vague phrase is followed by specifics within 10 words
       const afterMatch = text.slice(match.index + match[0].length, match.index + match[0].length + 100);
       const actionVerbs = /(?:deploy|build|create|implement|configure|set up|install|debug|fix|test|write|design|develop|run|execute|manage|monitor|review|analyze|generate|migrate|refactor|maintain|update|optimize)/i;
       const hasFollowingContext = actionVerbs.test(afterMatch.split(/\s+/).slice(0, 10).join(' '));
@@ -256,11 +325,10 @@ function checkVagueObjectives(text) {
     }
   }
 
-  // If vague phrases found, check if specificity exists ANYWHERE in the doc
   if (vagueCount > 0) {
     const hasSpecificity = specificityPatterns.some(p => p.test(text));
     if (hasSpecificity) {
-      vagueCount = 0; // Specificity elsewhere redeems vague phrases
+      vagueCount = 0;
     }
   }
 
@@ -269,6 +337,7 @@ function checkVagueObjectives(text) {
 
 function checkEscalationPath(text) {
   const patterns = [
+    // v1.0 patterns
     /\bescalat/i,
     /\bask\s.{0,15}human/i,
     /\bstop\s.{0,15}ask/i,
@@ -276,18 +345,71 @@ function checkEscalationPath(text) {
     /\bhand off\b/i,
     /\bhuman review\b/i,
     /\bwhen unsure\b/i,
+    // v1.1 broadened: doc references as escalation
+    /\bsee\s.{0,50}(?:contributing|guideline|documentation|docs)\b/i,
+    /\breport\s.{0,20}(?:issue|bug|security|concern)\b/i,
   ];
   return { matchCount: countMatches(text, patterns) };
 }
 
 function checkDataHandling(text) {
   const patterns = [
+    // v1.0 patterns
     /\bprivacy\b/i,
     /\bconfidential/i,
     /\bsensitive\b/i,
     /\bpii\b/i,
     /(?:do not|don't|never)\s.{0,15}(?:share|expose)/i,
     /(?:do not|don't|never)\s.{0,15}(?:store|log)\s.{0,15}(?:secret|password|key|credential|token)/i,
+    // v1.1 broadened: security/safety
+    /\bsecur/i,
+    /\bharmful\b/i,
+    /\bresponsible\b/i,
+    /\bsafe\b/i,
+  ];
+  return { matchCount: countMatches(text, patterns) };
+}
+
+// --- v1.1 new checks ---
+
+function checkProjectContext(text) {
+  const patterns = [
+    /\bproject\b/i,
+    /\brepository\b/i,
+    /\bcodebase\b/i,
+    /\barchitecture\b/i,
+    /\bstructure\b/i,
+    /\bdirectory\b/i,
+    /\bfolder\b/i,
+    /\boverview\b/i,
+  ];
+  return { matchCount: countMatches(text, patterns) };
+}
+
+function checkDevelopmentWorkflow(text) {
+  const patterns = [
+    /\bbuild\b/i,
+    /\btest\b/i,
+    /\binstall\b/i,
+    /\bsetup\b/i,
+    /\bworkflow\b/i,
+    /\bcontribut/i,
+    /\bnpm\b/i,
+    /\bconfigure\b/i,
+    /\bcommand\b/i,
+  ];
+  return { matchCount: countMatches(text, patterns) };
+}
+
+function checkCodeConventions(text) {
+  const patterns = [
+    /\bconvention\b/i,
+    /\bstyle\b/i,
+    /\bnaming\b/i,
+    /\blint\b/i,
+    /\bstandard\b/i,
+    /\bguideline\b/i,
+    /\bbest practice/i,
   ];
   return { matchCount: countMatches(text, patterns) };
 }
@@ -313,7 +435,6 @@ function scoreCheck(check, result) {
     return 0;
   }
 
-  // Positive check
   const { matchCount } = result;
   if (matchCount >= 2) return maxPoints;
   if (matchCount === 1) return half;
@@ -338,8 +459,21 @@ function getStatusIcon(points, maxPoints) {
 
 export function scoreFile(rawContent) {
   const text = stripMarkdown(rawContent);
+  const docType = detectDocType(text);
 
   const results = CHECKS.map(check => {
+    // Conditional checks: auto-pass for system prompts
+    if (check.conditional === 'project-doc' && docType === 'system-prompt') {
+      return {
+        name: check.name,
+        maxPoints: check.maxPoints,
+        points: check.maxPoints,
+        status: 'pass',
+        fix: check.fix,
+        autoPass: true,
+      };
+    }
+
     const result = check.run(text);
     const points = scoreCheck(check, result);
     const status = getStatusIcon(points, check.maxPoints);
@@ -355,10 +489,12 @@ export function scoreFile(rawContent) {
   let rawScore = results.reduce((sum, r) => sum + r.points, 0);
   let normalized = Math.round((rawScore / TOTAL_RAW) * 100);
 
-  // Critical failure rule: Authority Boundaries AND Scope Limitations both at 0
+  // Critical failure rule: only applies to system prompts
   const authorityResult = results.find(r => r.name === 'Authority Boundaries');
   const scopeResult = results.find(r => r.name === 'Scope Limitations');
-  const criticalFailure = authorityResult.points === 0 && scopeResult.points === 0;
+  const criticalFailure = docType === 'system-prompt'
+    && authorityResult.points === 0
+    && scopeResult.points === 0;
 
   if (criticalFailure && normalized > 54) {
     normalized = 54;
@@ -371,6 +507,7 @@ export function scoreFile(rawContent) {
     score: normalized,
     grade,
     label,
+    docType,
     criticalFailure,
     results,
     issues,
@@ -395,4 +532,4 @@ export function scoreFiles(files) {
   };
 }
 
-export { CHECKS, TOTAL_RAW, stripMarkdown };
+export { CHECKS, TOTAL_RAW, stripMarkdown, detectDocType, BEHAVIORAL_PATTERNS };

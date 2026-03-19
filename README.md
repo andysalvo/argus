@@ -53,31 +53,41 @@ No configuration required. All file patterns are enabled by default.
 
 ## Scoring
 
-Argus scores files against the **Argus Governance Standard v1.0** -- 10 checks with published, transparent weights.
+Argus scores files against the **Argus Governance Standard v1.1** -- 13 checks with published, transparent weights and document-type-aware scoring.
+
+### Document Type Detection
+
+Argus automatically classifies each file as a **System Prompt** or **Project Doc**:
+
+- **System Prompt** -- contains behavioral language like "you are", "your role", "act as". The 3 project-context checks auto-pass.
+- **Project Doc** -- repository guides, contribution docs, codebase instructions. All 13 checks apply normally.
 
 ### Checks
 
 | # | Check | Points | What It Detects |
 |---|-------|--------|-----------------|
 | 1 | Silent Inference | 15 | Instructions that tell agents to assume, auto-correct, or silently infer without asking |
-| 2 | Authority Boundaries | 15 | Whether agents must get human approval before irreversible actions |
-| 3 | Scope Limitations | 12 | Whether agents are told what they cannot do |
-| 4 | Audit Trail | 12 | Whether agents are instructed to log decisions and actions |
-| 5 | Error Handling | 10 | What agents should do when something fails |
-| 6 | Output Format | 10 | Whether response format is specified |
-| 7 | Identity Definition | 10 | Whether the agent's role and purpose are defined |
+| 2 | Authority Boundaries | 15 | Human approval requirements, code review gates, pre-commit verification |
+| 3 | Scope Limitations | 12 | What agents/contributors cannot do, project constraints |
+| 4 | Audit Trail | 12 | Logging, decision records, git workflow, version tracking |
+| 5 | Error Handling | 10 | Error recovery, validation, verification, fallback instructions |
+| 6 | Output Format | 10 | Format specs: JSON, YAML, markdown, front matter, config schemas |
+| 7 | Identity Definition | 10 | Agent role/purpose, or project/repository identity |
 | 8 | Vague Objectives | 10 | Whether goals are specific enough to evaluate |
-| 9 | Escalation Path | 8 | Whether agents know when to stop and ask a human |
-| 10 | Data Handling | 8 | Whether sensitive data handling rules exist |
+| 9 | Escalation Path | 8 | When to stop and ask, documentation references, issue reporting |
+| 10 | Safety & Data Handling | 8 | Privacy, security policies, responsible AI, sensitive data rules |
+| 11 | Project Context | 10 | Project overview, repo structure, directory layout *(auto-pass for System Prompts)* |
+| 12 | Development Workflow | 10 | Build, test, install, setup commands *(auto-pass for System Prompts)* |
+| 13 | Code Conventions | 10 | Naming conventions, style guides, coding standards *(auto-pass for System Prompts)* |
 
-**Total: 110 raw points, normalized to 100.**
+**Total: 140 raw points, normalized to 100.**
 
 ### Scoring Mechanics
 
 - **Pass** (2+ pattern matches): full points
 - **Partial** (1 match): half points (rounded down)
 - **Fail** (0 matches): 0 points
-- **Critical failure:** If both Authority Boundaries and Scope Limitations score 0, the total is capped at D (54 max)
+- **Critical failure:** If both Authority Boundaries and Scope Limitations score 0 in a System Prompt, the total is capped at D (54 max). Does not apply to Project Docs.
 
 ### Grades
 
@@ -98,6 +108,7 @@ Argus uses context-aware pattern matching to avoid false positives:
 - `help the user` only fails if no specificity exists anywhere in the document
 - Markdown formatting is stripped before analysis
 - All patterns are case-insensitive
+- Document type detection prevents governance checks from penalizing project docs
 
 It's better to miss a real issue than to flag something good.
 

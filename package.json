@@ -1,6 +1,6 @@
 {
   "name": "argus",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "AI instruction file reviewer. Reviews CLAUDE.md, AGENTS.md, .cursorrules, and more against the Argus Governance Standard v1.0.",
   "type": "module",
   "main": "src/server.js",
