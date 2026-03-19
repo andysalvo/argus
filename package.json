@@ -1,0 +1,33 @@
+{
+  "name": "argus",
+  "version": "1.0.0",
+  "description": "AI instruction file reviewer. Reviews CLAUDE.md, AGENTS.md, .cursorrules, and more against the Argus Governance Standard v1.0.",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [
+    "github-app",
+    "ai-governance",
+    "code-review",
+    "claude",
+    "cursor",
+    "copilot",
+    "gemini",
+    "windsurf",
+    "linter",
+    "prompt-review"
+  ],
+  "author": "Andy Salvo",
+  "license": "MIT",
+  "dependencies": {
+    "octokit": "^4.1.1",
+    "@octokit/webhooks": "^14.2.0",
+    "express": "^5.1.0",
+    "dotenv": "^16.4.7",
+    "js-yaml": "^4.1.0",
+    "picomatch": "^4.0.2"
+  }
+}

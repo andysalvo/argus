@@ -1,0 +1,23 @@
+# Argus configuration
+# Place this file at .github/argus.yml or argus.yml in your repo root.
+# All settings are optional -- defaults review all supported AI instruction files.
+
+version: 1
+
+# Override which files to check (default: all patterns enabled)
+# files:
+#   include:
+#     - "CLAUDE.md"
+#     - "AGENTS.md"
+#     - ".cursorrules"
+#   exclude:
+#     - "examples/**"
+
+# Score threshold -- if any file scores below this, a warning is added to the comment
+# threshold: 70
+
+# Optional premium: use x402 governance endpoint for deeper analysis
+# Requires USDC on Base. See https://x402.asalvocreative.com/tools/health
+# premium:
+#   enabled: false
+#   endpoint: "https://x402.asalvocreative.com/tools/health"
