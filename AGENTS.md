@@ -1,6 +1,6 @@
 # Argus -- Agent Instructions
 
-You are working on Argus, a GitHub App that automatically reviews AI instruction files and posts governance quality scores.
+You are working on Argus, a GitHub App that automatically reviews AI instruction files and posts governance quality scores against the Argus Governance Standard v1.0.
 
 ## Purpose
 
