@@ -7,7 +7,11 @@
 
 import 'dotenv/config';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import express from 'express';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 import { App } from 'octokit';
 import { createNodeMiddleware } from '@octokit/webhooks';
 import { detectFiles } from './detector.js';
@@ -52,7 +56,7 @@ ghApp.webhooks.on(['pull_request.opened', 'pull_request.reopened', 'pull_request
       .filter(f => f.status !== 'removed')
       .map(f => f.filename);
 
-    await reviewFiles(octokit, owner, repo, ref, changedPaths, { prNumber });
+    await reviewFiles(octokit, owner, repo, ref, changedPaths, { prNumber, headSha: ref });
   } catch (err) {
     console.error(`[PR] Error reviewing ${owner}/${repo}#${prNumber}:`, err.message);
   }
@@ -186,6 +190,11 @@ async function reviewFiles(octokit, owner, repo, ref, changedPaths, target) {
     await postCommitComment(octokit, owner, repo, target.commitSha, body);
   }
 
+  // Post Check Run (PR events only)
+  if (target.prNumber && target.headSha) {
+    await postCheckRun(octokit, owner, repo, target.headSha, result, config.threshold);
+  }
+
   console.log(`  Posted review: ${result.summary.grade} (${result.summary.score}/100)`);
 }
 
@@ -209,6 +218,33 @@ async function postPRComment(octokit, owner, repo, prNumber, body) {
   }
 }
 
+async function postCheckRun(octokit, owner, repo, headSha, result, threshold) {
+  try {
+    const { summary, files } = result;
+    const conclusion = (threshold && summary.score < threshold) ? 'failure' : 'success';
+
+    const fileLines = files.map(f => {
+      const docLabel = f.docType === 'system-prompt' ? 'System Prompt' : 'Project Doc';
+      return `${f.path}: ${f.grade} (${f.score}/100) · ${docLabel}`;
+    }).join('\n');
+
+    await octokit.rest.checks.create({
+      owner,
+      repo,
+      name: 'Argus',
+      head_sha: headSha,
+      status: 'completed',
+      conclusion,
+      output: {
+        title: `${summary.grade} (${summary.score}/100)`,
+        summary: `Argus Governance Standard v1.1 — ${files.length} file(s) reviewed.\n\n${fileLines}`,
+      },
+    });
+  } catch (err) {
+    console.error(`  Check run failed: ${err.message}`);
+  }
+}
+
 async function postCommitComment(octokit, owner, repo, commitSha, body) {
   await octokit.rest.repos.createCommitComment({
     owner,
@@ -229,11 +265,12 @@ app.use(createNodeMiddleware(ghApp.webhooks, { path: '/api/webhook' }));
 app.use(express.json());
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', app: 'argus', version: '1.1.0' });
+  res.json({ status: 'ok', app: 'argus', version: '1.2.0' });
 });
 
 app.get('/', (req, res) => {
-  res.type('text/html').send(LANDING_HTML);
+  const html = fs.readFileSync(join(__dirname, 'landing.html'), 'utf8');
+  res.type('text/html').send(html);
 });
 
 // --- Badge endpoint ---
@@ -341,78 +378,7 @@ async function findScoreInCommits(octokit, owner, repo) {
 
 app.listen(PORT, '0.0.0.0', async () => {
   const { data } = await ghApp.octokit.request('/app');
-  console.log(`Argus v1.1.0 listening on port ${PORT}`);
+  console.log(`Argus v1.2.0 listening on port ${PORT}`);
   console.log(`Authenticated as "${data.name}"`);
   console.log(`Webhook: http://localhost:${PORT}/api/webhook`);
 });
-
-// --- Landing page ---
-
-const LANDING_HTML = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Argus -- AI Instruction File Reviewer</title>
-  <meta name="description" content="The only AI instruction reviewer that works across Claude, Cursor, Copilot, Gemini, and Windsurf. Install on your GitHub repos for automatic governance scoring.">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0a0a0a; color: #d0d0d0; font-family: 'Inter', -apple-system, sans-serif; line-height: 1.7; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-    .wrap { max-width: 640px; padding: 3rem 2rem; }
-    h1 { color: #fff; font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
-    .tagline { color: #888; font-size: 1rem; margin-bottom: 2rem; }
-    h2 { color: #aaa; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; margin: 2rem 0 0.8rem; }
-    p { color: #999; font-size: 0.9rem; margin: 0.5rem 0; }
-    a { color: #5b9bd5; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .btn { display: inline-block; background: #5b9bd5; color: #000; padding: 0.6rem 1.5rem; border-radius: 6px; font-weight: 600; font-size: 0.9rem; margin: 1rem 0; }
-    .btn:hover { background: #7bb3e0; text-decoration: none; }
-    code { background: #151515; padding: 2px 6px; border-radius: 3px; font-size: 0.85rem; color: #5b9bd5; }
-    ul { list-style: none; margin: 0.5rem 0; }
-    ul li { color: #999; font-size: 0.85rem; padding: 0.2rem 0; }
-    ul li::before { content: "\\2713 "; color: #5b9bd5; }
-    .footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #1a1a1a; color: #444; font-size: 0.75rem; }
-  </style>
-</head>
-<body>
-<div class="wrap">
-  <h1>Argus</h1>
-  <p class="tagline">AI instruction file reviewer for GitHub.</p>
-  <p>Automatically reviews <code>CLAUDE.md</code>, <code>AGENTS.md</code>, <code>.cursorrules</code>, and 9 more file patterns. Scores against the <strong>Argus Governance Standard v1.1</strong> -- 13 checks, document-type-aware scoring, zero false positives.</p>
-
-  <a href="https://github.com/apps/argusreview/installations/new" class="btn">Install on GitHub</a>
-
-  <h2>Supported frameworks</h2>
-  <ul>
-    <li>Claude Code (CLAUDE.md)</li>
-    <li>AGENTS.md (open standard)</li>
-    <li>GitHub Copilot (copilot-instructions.md)</li>
-    <li>Cursor (.cursorrules, .cursor/rules/)</li>
-    <li>Gemini CLI (GEMINI.md)</li>
-    <li>Windsurf (.windsurfrules)</li>
-  </ul>
-
-  <h2>What it checks</h2>
-  <ul>
-    <li>Silent inference patterns</li>
-    <li>Authority boundaries</li>
-    <li>Scope limitations</li>
-    <li>Audit trail instructions</li>
-    <li>Error handling</li>
-    <li>Output format specification</li>
-    <li>Identity definition</li>
-    <li>Objective clarity</li>
-    <li>Escalation paths</li>
-    <li>Data handling guidelines</li>
-  </ul>
-
-  <h2>Links</h2>
-  <p><a href="https://github.com/andysalvo/argus">Source code &amp; documentation</a></p>
-  <p><a href="https://github.com/andysalvo/argus#scoring">Scoring methodology</a></p>
-
-  <div class="footer">
-    <p>Argus v1.1.0 -- MIT License -- Built by <a href="https://github.com/andysalvo">Andy Salvo</a></p>
-  </div>
-</div>
-</body>
-</html>`;

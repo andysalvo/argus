@@ -7,6 +7,14 @@ Argus is a GitHub App that automatically reviews AI instruction files in your re
 [![Install Argus](https://img.shields.io/badge/Install-Argus-blue?style=flat-square)](https://github.com/apps/argusreview/installations/new)
 [![Argus Grade](https://argus.asalvocreative.com/badge/andysalvo/argus)](https://github.com/andysalvo/argus)
 
+## Try It Locally
+
+```bash
+npx argus score CLAUDE.md
+```
+
+No install required. Scores any AI instruction file against the Governance Standard v1.1.
+
 ## Badge
 
 Show your repo's Argus grade in your README:
@@ -15,7 +23,11 @@ Show your repo's Argus grade in your README:
 [![Argus Grade](https://argus.asalvocreative.com/badge/OWNER/REPO)](https://github.com/andysalvo/argus)
 ```
 
-Replace `OWNER/REPO` with your GitHub username and repository name. Clicking the badge takes people to the Argus repo. The badge updates automatically when Argus reviews your files.
+Or auto-detect from your git remote:
+
+```bash
+npx argus score --badge
+```
 
 ## What It Does
 
@@ -136,6 +148,29 @@ premium:
   enabled: false
   endpoint: "https://x402.asalvocreative.com/tools/health"
 ```
+
+## CLI
+
+Score files locally without the GitHub App:
+
+```bash
+# Score a single file
+npx argus score CLAUDE.md
+
+# Score all instruction files in current directory
+npx argus score
+
+# JSON output for CI pipelines
+npx argus score --json
+
+# Fail CI if any file scores below 70
+npx argus score --min 70
+
+# Print badge markdown (auto-detects GitHub remote)
+npx argus score --badge
+```
+
+Exit codes: `0` = all files pass, `1` = at least one file below `--min` threshold.
 
 ## Self-Hosting
 
