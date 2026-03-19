@@ -30,7 +30,7 @@ const ghApp = new App({
 
 // --- Webhook handlers ---
 
-ghApp.webhooks.on(['pull_request.opened', 'pull_request.synchronize'], async ({ octokit, payload }) => {
+ghApp.webhooks.on(['pull_request.opened', 'pull_request.reopened', 'pull_request.synchronize'], async ({ octokit, payload }) => {
   const { repository, pull_request } = payload;
   const owner = repository.owner.login;
   const repo = repository.name;
